@@ -319,7 +319,7 @@ const calculateRentalDays = () => {
     const start = new Date(rentalDateRange.value[0])
     const end = new Date(rentalDateRange.value[1])
     const diffTime = Math.abs(end - start)
-    rentalDays.value = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+    rentalDays.value = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   } else {
     rentalDays.value = 0
   }
@@ -337,6 +337,10 @@ const addRentalRecord = () => {
   }
   if (!rentalDateRange.value || rentalDateRange.value.length !== 2) {
     ElMessage.warning('请选择出租时间段')
+    return
+  }
+  if (rentalDays.value < 8) {
+    ElMessage.warning('根据CS2交易规则，出租时间不能少于8天')
     return
   }
 
