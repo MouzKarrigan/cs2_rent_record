@@ -87,6 +87,21 @@
             {{ formatDate(row.purchaseDate) }}
           </template>
         </el-table-column>
+        <el-table-column label="拥有日数" prop="ownershipDays" width="120">
+          <template #default="{ row }">
+            {{ calculateOwnershipDays(row) }}天
+          </template>
+        </el-table-column>
+        <el-table-column label="出租天数" prop="totalRentalDays" width="120">
+          <template #default="{ row }">
+            {{ calculateTotalRentalDays(row) }}天
+          </template>
+        </el-table-column>
+        <el-table-column label="出租时间占比" prop="rentalTimeRatio" width="140">
+          <template #default="{ row }">
+            {{ calculateRentalTimeRatio(row).toFixed(2) }}%
+          </template>
+        </el-table-column>
         <el-table-column label="总租金" prop="totalRentalIncome" width="120">
           <template #default="{ row }">
             ¥{{ calculateTotalRentalIncome(row).toFixed(2) }}
@@ -409,6 +424,55 @@ const handleExpandChange = (row, expandedRows) => {
   }
 }
 
+// 计算拥有日数（根据最新租赁记录的到期时间来判断）
+const calculateOwnershipDays = (item) => {
+  const purchaseDate = new Date(item.purchaseDate)
+  
+  // 如果没有租赁记录，拥有日数为购买日期至当前日期
+  if (!item.rentalRecords || item.rentalRecords.length === 0) {
+    const today = new Date()
+    const diffTime = Math.abs(today - purchaseDate)
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
+  
+  // 找出最新的租赁记录（按结束日期排序）
+  const sortedRecords = [...item.rentalRecords].sort((a, b) => {
+    return new Date(b.endDate) - new Date(a.endDate)
+  })
+  const latestRecord = sortedRecords[0]
+  const latestEndDate = new Date(latestRecord.endDate)
+  const today = new Date()
+  
+  // 如果最新租赁记录的到期时间早于或等于当前日期（已归还）
+  if (latestEndDate <= today) {
+    // 拥有日数为购买日期至当前日期
+    const diffTime = Math.abs(today - purchaseDate)
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  } else {
+    // 如果最新租赁记录的到期时间晚于当前日期（未归还）
+    // 拥有日数为购买日期至最终归还日期
+    const diffTime = Math.abs(latestEndDate - purchaseDate)
+    return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  }
+}
+
+// 计算总出租天数
+const calculateTotalRentalDays = (item) => {
+  if (!item.rentalRecords || item.rentalRecords.length === 0) {
+    return 0
+  }
+  return item.rentalRecords.reduce((sum, rental) => sum + rental.days, 0)
+}
+
+// 计算出租时间占比
+const calculateRentalTimeRatio = (item) => {
+  const ownershipDays = calculateOwnershipDays(item)
+  if (ownershipDays === 0) return 0
+  
+  const totalRentalDays = calculateTotalRentalDays(item)
+  return (totalRentalDays / ownershipDays) * 100
+}
+
 // 计算总租金收入
 const calculateTotalRentalIncome = (item) => {
   return item.rentalRecords.reduce((sum, rental) => sum + rental.netProfit, 0)
@@ -421,18 +485,15 @@ const calculateProfitRate = (item) => {
   return (totalIncome / item.purchasePrice) * 100
 }
 
-// 计算年化收益率
+// 计算年化收益率（基于新的拥有天数计算逻辑）
 const calculateAnnualizedRate = (item) => {
   const totalIncome = calculateTotalRentalIncome(item)
-  const purchaseDate = new Date(item.purchaseDate)
-  const today = new Date()
-  const diffTime = Math.abs(today - purchaseDate)
-  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  const ownershipDays = calculateOwnershipDays(item)
   
-  if (diffDays === 0 || item.purchasePrice === 0) return 0
+  if (ownershipDays === 0 || item.purchasePrice === 0) return 0
   
   const profitRate = (totalIncome / item.purchasePrice)
-  const annualizedRate = (profitRate / diffDays) * 365 * 100
+  const annualizedRate = (profitRate / ownershipDays) * 365 * 100
   
   return annualizedRate
 }
