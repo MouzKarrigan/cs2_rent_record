@@ -82,17 +82,17 @@
             ¥{{ row.purchasePrice.toFixed(2) }}
           </template>
         </el-table-column>
-        <el-table-column label="购入时间" prop="purchaseDate" width="150">
+        <el-table-column label="购入时间" prop="purchaseDate" width="120">
           <template #default="{ row }">
             {{ formatDate(row.purchaseDate) }}
           </template>
         </el-table-column>
-        <el-table-column label="拥有日数" prop="ownershipDays" width="120">
+        <el-table-column label="拥有日数" prop="ownershipDays" width="100">
           <template #default="{ row }">
             {{ calculateOwnershipDays(row) }}天
           </template>
         </el-table-column>
-        <el-table-column label="出租天数" prop="totalRentalDays" width="120">
+        <el-table-column label="出租天数" prop="totalRentalDays" width="100">
           <template #default="{ row }">
             {{ calculateTotalRentalDays(row) }}天
           </template>
@@ -117,10 +117,13 @@
             {{ calculateAnnualizedRate(row).toFixed(2) }}%
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="150">
-          <template #default="{ row }">
+        <el-table-column label="操作" width="200">
+          <template #default="{ row, $index }">
             <el-button type="primary" size="small" @click="showAddRentalDialog(row)">
               添加租赁记录
+            </el-button>
+            <el-button type="danger" size="small" @click="deleteItem($index)">
+              删除
             </el-button>
           </template>
         </el-table-column>
@@ -213,6 +216,20 @@
           >
             <template #append>%</template>
           </el-input>
+          <div style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
+            <el-button size="small" @click="applyFeeRate('youyou-discount')">
+              悠悠有品
+            </el-button>
+            <el-button size="small" @click="applyFeeRate('youyou')">
+              悠悠有品-减免
+            </el-button>
+            <el-button size="small" @click="applyFeeRate('igxe')">
+              IGXE
+            </el-button>
+            <el-button size="small" @click="applyFeeRate('igxe-subsidy')">
+              IGXE-补贴
+            </el-button>
+          </div>
         </el-form-item>
         <el-form-item label="出租时间段">
           <el-date-picker
@@ -249,7 +266,7 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 饰品列表
 const items = ref([])
@@ -316,6 +333,24 @@ const addItem = () => {
   ElMessage.success('饰品添加成功')
 }
 
+// 删除饰品
+const deleteItem = (index) => {
+  ElMessageBox.confirm(
+    '确定要删除该饰品及其所有租赁记录吗？',
+    '警告',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    items.value.splice(index, 1)
+    ElMessage.success('饰品已删除')
+  }).catch(() => {
+    // 用户取消删除
+  })
+}
+
 // 显示添加租赁记录对话框
 const showAddRentalDialog = (item) => {
   currentItem.value = item
@@ -326,6 +361,36 @@ const showAddRentalDialog = (item) => {
   rentalDateRange.value = []
   rentalDays.value = 0
   addRentalDialogVisible.value = true
+}
+
+// 应用手续费率快速填充
+const applyFeeRate = (platform) => {
+  const originalDailyRent = newRental.value.dailyRent
+  
+  switch (platform) {
+    case 'youyou-discount': // 悠悠有品-减免
+      newRental.value.feeRate = 25
+      ElMessage.success('已应用悠悠有品-减免费率：25%')
+      break
+    case 'youyou': // 悠悠有品
+      newRental.value.feeRate = 20
+      ElMessage.success('已应用悠悠有品费率：20%')
+      break
+    case 'igxe': // IGXE
+      newRental.value.feeRate = 0
+      ElMessage.success('已应用IGXE费率：0%')
+      break
+    case 'igxe-subsidy': // IGXE-补贴
+      newRental.value.feeRate = 0
+      // 将日租金变为110%
+      if (originalDailyRent > 0) {
+        newRental.value.dailyRent = Number((originalDailyRent * 1.1).toFixed(2))
+        ElMessage.success('已应用IGXE-补贴：0%费率，日租金调整为110%')
+      } else {
+        ElMessage.success('已应用IGXE-补贴费率：0%（请先输入日租金以自动调整为110%）')
+      }
+      break
+  }
 }
 
 // 计算租赁天数
