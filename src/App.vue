@@ -715,9 +715,11 @@ const handleFileImport = (event) => {
 .footer-stats {
   position: sticky;
   bottom: 0;
-  background-color: #fff;
+  background-color: #ffffff;
   padding: 20px 0;
   box-shadow: 0 -2px 12px 0 rgba(0, 0, 0, 0.1);
+  opacity: 1;
+  z-index: 1000;
 }
 
 .stats-row {
