@@ -370,6 +370,34 @@ const formatDate = (dateStr) => {
   return dateStr
 }
 
+// 判断饰品是否需要标黄提醒（归还后超过8天含8天）
+const shouldHighlightItem = (item) => {
+  // 如果没有租赁记录，不需要标黄
+  if (!item.rentalRecords || item.rentalRecords.length === 0) {
+    return false
+  }
+  
+  // 找出最新的租赁记录（按结束日期排序）
+  const sortedRecords = [...item.rentalRecords].sort((a, b) => {
+    return new Date(b.endDate) - new Date(a.endDate)
+  })
+  const latestRecord = sortedRecords[0]
+  const latestEndDate = new Date(latestRecord.endDate)
+  const today = new Date()
+  
+  // 只有当最新租赁记录已归还（结束日期早于或等于当前日期）时才判断
+  if (latestEndDate <= today) {
+    // 计算归还后的天数
+    const diffTime = today - latestEndDate
+    const daysSinceReturn = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+    
+    // 如果归还后超过8天（含8天），返回true
+    return daysSinceReturn >= 8
+  }
+  
+  return false
+}
+
 // 导出数据
 const exportData = () => {
   const data = {
@@ -464,6 +492,7 @@ provide('calculateTotalRentalIncome', calculateTotalRentalIncome)
 provide('calculateProfitRate', calculateProfitRate)
 provide('calculateAnnualizedRate', calculateAnnualizedRate)
 provide('formatDate', formatDate)
+provide('shouldHighlightItem', shouldHighlightItem)
 </script>
 
 <style scoped>

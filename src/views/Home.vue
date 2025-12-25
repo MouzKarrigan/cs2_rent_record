@@ -6,6 +6,7 @@
         :data="items"
         style="width: 100%"
         @expand-change="handleExpandChange"
+        :row-class-name="tableRowClassName"
       >
         <el-table-column type="expand">
           <template #default="{ row }">
@@ -253,6 +254,12 @@ const calculateTotalRentalIncome = inject('calculateTotalRentalIncome')
 const calculateProfitRate = inject('calculateProfitRate')
 const calculateAnnualizedRate = inject('calculateAnnualizedRate')
 const formatDate = inject('formatDate')
+const shouldHighlightItem = inject('shouldHighlightItem')
+
+// 表格行样式
+const tableRowClassName = ({ row }) => {
+  return shouldHighlightItem(row) ? 'highlight-row' : ''
+}
 </script>
 
 <style scoped>
@@ -269,5 +276,14 @@ const formatDate = inject('formatDate')
 .rental-records {
   padding: 20px 0;
   background-color: #f5f7fa;
+}
+
+/* 标黄提醒样式 - 归还后超过8天的饰品 */
+:deep(.highlight-row) {
+  background-color: #fffbe6 !important;
+}
+
+:deep(.highlight-row:hover > td) {
+  background-color: #fff7cc !important;
 }
 </style>
