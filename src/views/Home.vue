@@ -3,7 +3,7 @@
     <!-- 饰品列表 -->
     <div class="content">
       <el-table
-        :data="items"
+        :data="paginatedItems"
         style="width: 100%"
         @expand-change="handleExpandChange"
         :row-class-name="tableRowClassName"
@@ -117,6 +117,19 @@
           </template>
         </el-table-column>
       </el-table>
+      
+      <!-- 分页组件 -->
+      <div class="pagination-container">
+        <el-pagination
+          v-model:current-page="currentPage"
+          v-model:page-size="pageSize"
+          :page-sizes="[5, 8, 20, 50]"
+          :total="items.length"
+          layout="total, sizes, prev, pager, next, jumper"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
     </div>
 
     <!-- 添加饰品对话框 -->
@@ -221,7 +234,7 @@
 </template>
 
 <script setup>
-import { inject } from 'vue'
+import { inject, ref, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // 从App.vue注入共享状态和方法
@@ -256,6 +269,27 @@ const calculateAnnualizedRate = inject('calculateAnnualizedRate')
 const formatDate = inject('formatDate')
 const shouldHighlightItem = inject('shouldHighlightItem')
 
+// 分页相关状态
+const currentPage = ref(1)
+const pageSize = ref(8) // 默认8条一页
+
+// 计算属性：分页后的数据
+const paginatedItems = computed(() => {
+  const start = (currentPage.value - 1) * pageSize.value
+  const end = start + pageSize.value
+  return items.value.slice(start, end)
+})
+
+// 分页事件处理
+const handleSizeChange = (val) => {
+  pageSize.value = val
+  currentPage.value = 1 // 切换每页条数时重置到第一页
+}
+
+const handleCurrentChange = (val) => {
+  currentPage.value = val
+}
+
 // 表格行样式
 const tableRowClassName = ({ row }) => {
   return shouldHighlightItem(row) ? 'highlight-row' : ''
@@ -276,6 +310,14 @@ const tableRowClassName = ({ row }) => {
 .rental-records {
   padding: 20px 0;
   background-color: #f5f7fa;
+}
+
+/* 分页容器样式 */
+.pagination-container {
+  margin-top: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* 标黄提醒样式 - 归还后超过8天的饰品 */
