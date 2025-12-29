@@ -392,7 +392,8 @@ const shouldHighlightItem = (item) => {
     const daysSinceReturn = Math.floor(diffTime / (1000 * 60 * 60 * 24))
     
     // 如果归还后超过8天（含8天），返回true
-    return daysSinceReturn >= 8
+    // return daysSinceReturn >= 8
+    return daysSinceReturn >= 7
   }
   
   return false

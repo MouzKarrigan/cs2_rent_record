@@ -109,7 +109,7 @@
         <el-table-column label="操作" width="200">
           <template #default="{ row, $index }">
             <el-button type="primary" size="small" @click="showAddRentalDialog(row)">
-              添加租赁记录
+              添加租赁
             </el-button>
             <el-button type="danger" size="small" @click="deleteItem($index)">
               删除
