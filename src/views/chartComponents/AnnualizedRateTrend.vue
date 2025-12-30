@@ -21,7 +21,8 @@ import {
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  DataZoomComponent
 } from 'echarts/components'
 import VChart from 'vue-echarts'
 
@@ -32,7 +33,8 @@ use([
   TitleComponent,
   TooltipComponent,
   GridComponent,
-  LegendComponent
+  LegendComponent,
+  DataZoomComponent
 ])
 
 // 从父组件注入数据
@@ -121,36 +123,33 @@ const calculateTotalAnnualizedRateAtDate = (date) => {
   return weightedSum / totalWeight
 }
 
-// 生成所有需要计算的日期点
+// 生成所有需要计算的日期点（每一天）
 const generateDatePoints = () => {
   if (!items.value || items.value.length === 0) return []
   
-  const dateSet = new Set()
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   
-  // 收集所有购入日期和租赁结束日期
+  // 找到最早的购买日期
+  let earliestDate = null
   items.value.forEach(item => {
     const purchaseDate = new Date(item.purchaseDate)
     purchaseDate.setHours(0, 0, 0, 0)
-    dateSet.add(purchaseDate.getTime())
-    
-    item.rentalRecords.forEach(record => {
-      const endDate = new Date(record.endDate)
-      endDate.setHours(0, 0, 0, 0)
-      if (endDate <= today) {
-        dateSet.add(endDate.getTime())
-      }
-    })
+    if (!earliestDate || purchaseDate < earliestDate) {
+      earliestDate = purchaseDate
+    }
   })
   
-  // 添加今天
-  dateSet.add(today.getTime())
+  if (!earliestDate) return []
   
-  // 转换为数组并排序
-  const dates = Array.from(dateSet)
-    .map(timestamp => new Date(timestamp))
-    .sort((a, b) => a - b)
+  // 生成从最早购买日期到今天的每一天
+  const dates = []
+  const currentDate = new Date(earliestDate)
+  
+  while (currentDate <= today) {
+    dates.push(new Date(currentDate))
+    currentDate.setDate(currentDate.getDate() + 1)
+  }
   
   return dates
 }
@@ -195,10 +194,36 @@ const chartOption = computed(() => {
     grid: {
       left: '3%',
       right: '4%',
-      bottom: '3%',
+      bottom: '15%',
       top: '10%',
       containLabel: true
     },
+    dataZoom: [
+      {
+        type: 'slider',
+        show: true,
+        start: 0,
+        end: 100,
+        height: 30,
+        bottom: 20,
+        borderColor: '#ccc',
+        fillerColor: 'rgba(64, 158, 255, 0.2)',
+        handleStyle: {
+          color: '#409EFF'
+        },
+        textStyle: {
+          color: '#333'
+        }
+      },
+      {
+        type: 'inside',
+        start: 0,
+        end: 100,
+        zoomOnMouseWheel: true,
+        moveOnMouseMove: true,
+        moveOnMouseWheel: false
+      }
+    ],
     xAxis: {
       type: 'category',
       data: dates,
